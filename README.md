@@ -1,14 +1,54 @@
-# Project 8: L'Oréal Chatbot
+# Project 8: L'Oreal Chatbot
 
-L’Oréal is exploring the power of AI, and your job is to showcase what's possible. Your task is to build a chatbot that helps users discover and understand L’Oréal’s extensive range of products—makeup, skincare, haircare, and fragrances—as well as provide personalized routines and recommendations.
+Build a beginner-friendly AI chatbot that helps users explore L'Oreal products across:
 
-## 🚀 Launch via GitHub Codespaces
+- Makeup
+- Skincare
+- Haircare
+- Fragrance
 
-1. In the GitHub repo, click the **Code** button and select **Open with Codespaces → New codespace**.
-2. Once your codespace is ready, open the `index.html` file via the live preview.
+The chatbot can also create personalized routines and recommendations.
 
-## ☁️ Cloudflare Note
+## What this version includes
 
-When deploying through Cloudflare, make sure your API request body (in `script.js`) includes a `messages` array and handle the response by extracting `data.choices[0].message.content`.
+- Conversational chat UI with user and assistant bubbles
+- Personalization from user details (skin type, hair concerns, fragrance style, budget)
+- Guided quick-prompt buttons for faster discovery
+- OpenAI Chat Completions request using a `messages` array
+- Response parsing from `data.choices[0].message.content`
 
-Enjoy building your L’Oréal beauty assistant! 💄
+## Run in Codespaces
+
+1. Open this repository in GitHub Codespaces.
+2. Open `index.html` with Live Preview.
+3. Add a `secrets.js` file in the project root.
+
+## Add your API configuration
+
+Create `secrets.js` with one of these options:
+
+Option A: Direct OpenAI request
+
+```js
+const OPENAI_API_KEY = "YOUR_OPENAI_KEY";
+```
+
+Option B: Cloudflare Worker (recommended for production)
+
+```js
+const CHAT_API_URL = "https://your-worker-url.workers.dev";
+```
+
+If you use a Worker, keep API keys on the server side (not in client code).
+
+## Important API format reminder
+
+- Send `messages` in the request body (not `prompt`)
+- Read the assistant reply from `data.choices[0].message.content`
+
+## Suggested demo prompts
+
+- Build me a morning skincare routine for oily skin
+- Recommend a beginner makeup routine for work
+- I have frizzy hair, suggest a full routine
+- Suggest a fresh floral fragrance for daytime

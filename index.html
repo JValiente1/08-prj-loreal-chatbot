@@ -45,6 +45,22 @@
             <!-- messages will be appended here via JS -->
           </div>
 
+          <div class="category-panel" aria-label="Beauty categories">
+            <p class="category-title">Choose a category:</p>
+            <div id="categoryFilters" class="category-filters"></div>
+          </div>
+
+          <div class="goal-panel" aria-label="Category goals">
+            <p class="goal-title">Pick a goal:</p>
+            <div id="presetGoals" class="goal-filters"></div>
+          </div>
+
+          <div
+            id="quickPrompts"
+            class="quick-prompts"
+            aria-label="Suggestion prompts"
+          ></div>
+
           <form id="chatForm" class="chat-form">
             <label for="userInput" class="visually-hidden">Message</label>
             <input
