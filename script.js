@@ -899,10 +899,17 @@ messages[0].content = buildSystemPrompt();
 
 if (hasSavedConversation && messages.length > 1) {
   restoreChatWindowFromMemory();
-} else {
+}
+
+if (!userProfile.name) {
   displayMessage(
     "assistant",
     "Bonjour. I can help you discover L'Oreal makeup, skincare, haircare, and fragrances, and build a personalized routine. What is your name?",
+  );
+} else if (!hasSavedConversation || messages.length <= 1) {
+  displayMessage(
+    "assistant",
+    `Bonjour ${userProfile.name}. I can help you discover L'Oreal makeup, skincare, haircare, and fragrances, and build a personalized routine.`,
   );
 }
 
