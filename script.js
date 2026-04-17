@@ -10,7 +10,7 @@ const quickPrompts = document.getElementById("quickPrompts");
 const categoryFilters = document.getElementById("categoryFilters");
 const presetGoals = document.getElementById("presetGoals");
 const testApiBtn = document.getElementById("testApiBtn");
-const clearChatBtn = document.getElementById("clearChatBtn");
+let clearChatBtn = document.getElementById("clearChatBtn");
 const apiStatus = document.getElementById("apiStatus");
 
 /* ============================================================
@@ -53,6 +53,32 @@ const OFF_TOPIC_REPLY =
   "I'm only able to help with L'Oreal beauty topics. Ask me about makeup, skincare, haircare, fragrance, or a personalized routine.";
 const INITIAL_NAME_PROMPT =
   "Bonjour. I can help you discover L'Oreal makeup, skincare, haircare, and fragrances, and build a personalized routine. What is your name?";
+
+function ensureClearChatButton() {
+  if (clearChatBtn) {
+    return clearChatBtn;
+  }
+
+  const toolsContainer = document.querySelector(".connection-tools");
+  if (!toolsContainer) {
+    return null;
+  }
+
+  const generatedButton = document.createElement("button");
+  generatedButton.type = "button";
+  generatedButton.id = "clearChatBtn";
+  generatedButton.className = "clear-chat-btn";
+  generatedButton.textContent = "Clear Chat";
+
+  if (testApiBtn && testApiBtn.parentElement === toolsContainer) {
+    testApiBtn.insertAdjacentElement("afterend", generatedButton);
+  } else {
+    toolsContainer.prepend(generatedButton);
+  }
+
+  clearChatBtn = generatedButton;
+  return clearChatBtn;
+}
 
 // Builds a small list of URL candidates so we can recover from path mismatch.
 function getApiCandidates(primaryUrl) {
@@ -964,8 +990,10 @@ if (testApiBtn) {
   });
 }
 
-if (clearChatBtn) {
-  clearChatBtn.addEventListener("click", () => {
+const clearButton = ensureClearChatButton();
+
+if (clearButton) {
+  clearButton.addEventListener("click", () => {
     clearChatAndReset();
   });
 }
