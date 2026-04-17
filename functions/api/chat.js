@@ -39,6 +39,16 @@ export function onRequestGet() {
 }
 
 export async function onRequestPost(context) {
+  if (!context.env || !context.env.OPENAI_API_KEY) {
+    return jsonResponse(
+      {
+        error:
+          "Missing OPENAI_API_KEY Pages secret. Add it with: wrangler pages secret put OPENAI_API_KEY --project-name 08-prj-loreal-chatbot",
+      },
+      500,
+    );
+  }
+
   const body = await context.request.json();
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",

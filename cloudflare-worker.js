@@ -39,9 +39,12 @@ export default {
     }
 
     try {
-      if (!env.OPENAI_API_KEY) {
+      if (!env || !env.OPENAI_API_KEY) {
         return new Response(
-          JSON.stringify({ error: "Missing OPENAI_API_KEY Worker secret." }),
+          JSON.stringify({
+            error:
+              "Missing OPENAI_API_KEY Worker secret. Add it with: wrangler secret put OPENAI_API_KEY --name loreal-chatbot-api",
+          }),
           { status: 500, headers: jsonHeaders },
         );
       }
