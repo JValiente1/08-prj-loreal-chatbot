@@ -60,6 +60,7 @@ body {
 }
 
 .site-header {
+  position: relative;
   text-align: center;
   padding: 28px 20px 20px;
   background: linear-gradient(
@@ -399,7 +400,8 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  align-items: center;
+  align-items: stretch;
+  width: 100%;
 }
 
 .test-api-btn {
@@ -451,8 +453,9 @@ body {
 }
 
 .api-status {
-  flex-basis: 100%;
-  margin-top: 2px;
+  order: 999;
+  width: 100%;
+  margin-top: 8px;
   font-size: 0.82rem;
   color: #4a202f;
 }
