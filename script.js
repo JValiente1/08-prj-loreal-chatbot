@@ -112,6 +112,111 @@ const conversationContext = {
   maxRecentQuestions: 8,
 };
 
+// Saves key chat context so it survives a browser refresh.
+const LOCAL_STORAGE_KEY = "loreal-chatbot-memory-v1";
+const MAX_SAVED_MESSAGES = 20;
+
+function getBrowserStorage() {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return null;
+  }
+
+  return window.localStorage;
+}
+
+function saveConversationState() {
+  const storage = getBrowserStorage();
+  if (!storage) return;
+
+  const messagesToSave = messages
+    .filter((message) => message.role !== "system")
+    .slice(-MAX_SAVED_MESSAGES);
+
+  const payload = {
+    userProfile,
+    recentQuestions: conversationContext.recentQuestions,
+    messages: messagesToSave,
+  };
+
+  try {
+    storage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
+  } catch (error) {
+    console.warn("Could not save chatbot memory:", error);
+  }
+}
+
+function loadConversationState() {
+  const storage = getBrowserStorage();
+  if (!storage) return false;
+
+  try {
+    const raw = storage.getItem(LOCAL_STORAGE_KEY);
+    if (!raw) return false;
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return false;
+
+    if (parsed.userProfile && typeof parsed.userProfile === "object") {
+      Object.keys(userProfile).forEach((key) => {
+        const value = parsed.userProfile[key];
+        userProfile[key] = typeof value === "string" ? value : "";
+      });
+    }
+
+    if (Array.isArray(parsed.recentQuestions)) {
+      conversationContext.recentQuestions = parsed.recentQuestions
+        .filter((item) => typeof item === "string" && item.trim())
+        .slice(0, conversationContext.maxRecentQuestions);
+    }
+
+    if (Array.isArray(parsed.messages)) {
+      const validMessages = parsed.messages
+        .filter(
+          (message) =>
+            message &&
+            typeof message === "object" &&
+            (message.role === "user" || message.role === "assistant") &&
+            typeof message.content === "string",
+        )
+        .slice(-MAX_SAVED_MESSAGES);
+
+      if (validMessages.length > 0) {
+        messages.push(...validMessages);
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.warn("Could not load chatbot memory:", error);
+    return false;
+  }
+}
+
+function cleanStoredUserText(text) {
+  return text.replace(/^\[Category focus:[^\]]+\]\s*/i, "");
+}
+
+function restoreChatWindowFromMemory() {
+  const restoredMessages = messages.filter(
+    (message) => message.role !== "system",
+  );
+
+  restoredMessages.forEach((message) => {
+    const textToShow =
+      message.role === "user"
+        ? cleanStoredUserText(message.content)
+        : message.content;
+
+    displayMessage(message.role, textToShow);
+  });
+
+  if (conversationContext.recentQuestions.length > 0) {
+    currentQuestion.textContent = buildCurrentQuestionText(
+      conversationContext.recentQuestions[0],
+    );
+  }
+}
+
 /* ============================================================
    STEP 4 - Build the system prompt dynamically
    We inject known user details so recommendations feel personal.
@@ -152,6 +257,7 @@ Rules:
 
 Style:
 - Keep responses concise and practical.
+- If the user's name is unknown, ask for their name early in the conversation.
 - Ask one clarifying question if key details are missing.
 - For routines, use numbered steps.
 - For recommendations, suggest 2 to 4 products with short reasons.
@@ -383,6 +489,14 @@ function buildAssistantLabel() {
   return labelParts.join(" | ");
 }
 
+function buildThinkingPhrase() {
+  if (userProfile.name) {
+    return `Because you're worth it, ${userProfile.name}...`;
+  }
+
+  return "Because you're worth it...";
+}
+
 /* ============================================================
    STEP 8 - Add a chat message bubble
    ============================================================ */
@@ -427,7 +541,7 @@ function showThinking() {
 
   const bubble = document.createElement("div");
   bubble.classList.add("bubble", "ai", "thinking");
-  bubble.innerHTML = `<span class="msg-label">${buildAssistantLabel()}</span>Because you are worth it...`;
+  bubble.innerHTML = `<span class="msg-label">${buildAssistantLabel()}</span>${buildThinkingPhrase()}`;
 
   row.appendChild(avatar);
   row.appendChild(bubble);
@@ -680,11 +794,13 @@ async function handleUserMessage(rawText) {
     displayMessage("assistant", OFF_TOPIC_REPLY);
     messages.push({ role: "user", content: userText });
     messages.push({ role: "assistant", content: OFF_TOPIC_REPLY });
+    saveConversationState();
     return;
   }
 
   messages.push({ role: "user", content: userTextWithCategory });
   messages[0].content = buildSystemPrompt();
+  saveConversationState();
 
   userInput.disabled = true;
   sendBtn.disabled = true;
@@ -732,6 +848,7 @@ async function handleUserMessage(rawText) {
     }
 
     messages.push({ role: "assistant", content: aiReply });
+    saveConversationState();
 
     thinkingRow.remove();
     displayMessage("assistant", aiReply);
@@ -777,10 +894,17 @@ if (testApiBtn) {
 /* ============================================================
    STEP 13 - Welcome message on page load
    ============================================================ */
-displayMessage(
-  "assistant",
-  "Bonjour. I can help you discover L'Oreal makeup, skincare, haircare, and fragrances, and build a personalized routine. Tell me your skin type, hair concern, or fragrance style to get started.",
-);
+const hasSavedConversation = loadConversationState();
+messages[0].content = buildSystemPrompt();
+
+if (hasSavedConversation && messages.length > 1) {
+  restoreChatWindowFromMemory();
+} else {
+  displayMessage(
+    "assistant",
+    "Bonjour. I can help you discover L'Oreal makeup, skincare, haircare, and fragrances, and build a personalized routine. What is your name?",
+  );
+}
 
 renderQuickPrompts();
 renderCategoryFilters();
