@@ -1,4 +1,4 @@
-name = "08-prj-loreal-chatbot4"
+name = "08-prj-loreal-chatbot1"
 type = "service"
 account_id = "89321819bb69b26bfb198c7da090cd18"
 main = "cloudflare-worker.js"
