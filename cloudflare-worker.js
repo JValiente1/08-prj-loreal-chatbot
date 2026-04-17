@@ -20,9 +20,9 @@ export default {
 
     if (request.method === "GET") {
       return new Response(
-        "L'Oreal Beauty Advisor API is online. This endpoint accepts POST requests only.",
+        "L'Oreal Beauty Advisor API is online. Send chat requests with POST.",
         {
-          status: 405,
+          status: 200,
           headers: {
             ...corsHeaders,
             "Content-Type": "text/plain; charset=UTF-8",

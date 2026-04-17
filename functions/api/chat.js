@@ -25,9 +25,9 @@ export function onRequestOptions() {
 
 export function onRequestGet() {
   return new Response(
-    "L'Oreal Beauty Advisor API is online. This endpoint accepts POST requests only. Send your chat payload to /api/chat using method POST.",
+    "L'Oreal Beauty Advisor API is online. Send your chat payload to /api/chat using method POST.",
     {
-      status: 405,
+      status: 200,
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
