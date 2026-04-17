@@ -815,7 +815,7 @@ async function handleUserMessage(rawText) {
   displayMessage("user", userText);
 
   if (capturedNameThisTurn) {
-    const nameWelcomeReply = `Nice to meet you, ${userProfile.name}. Because you're worth it, ${userProfile.name}... What would you like help with today: makeup, skincare, haircare, or fragrance?`;
+    const nameWelcomeReply = `Bonjour ${userProfile.name}, I can help you discover L'Oreal makeup, skincare, haircare, and fragrances, and build a personalized routine.`;
 
     displayMessage("assistant", nameWelcomeReply);
     messages.push({ role: "user", content: userText });
