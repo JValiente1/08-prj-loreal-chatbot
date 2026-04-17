@@ -10,6 +10,7 @@ const quickPrompts = document.getElementById("quickPrompts");
 const categoryFilters = document.getElementById("categoryFilters");
 const presetGoals = document.getElementById("presetGoals");
 const testApiBtn = document.getElementById("testApiBtn");
+const clearChatBtn = document.getElementById("clearChatBtn");
 const apiStatus = document.getElementById("apiStatus");
 
 /* ============================================================
@@ -50,6 +51,8 @@ const API_URL = normalizeApiUrl(configuredApiUrl);
 const IS_SAME_SITE_API = API_URL.startsWith("/");
 const OFF_TOPIC_REPLY =
   "I'm only able to help with L'Oreal beauty topics. Ask me about makeup, skincare, haircare, fragrance, or a personalized routine.";
+const INITIAL_NAME_PROMPT =
+  "Bonjour. I can help you discover L'Oreal makeup, skincare, haircare, and fragrances, and build a personalized routine. What is your name?";
 
 // Builds a small list of URL candidates so we can recover from path mismatch.
 function getApiCandidates(primaryUrl) {
@@ -192,6 +195,17 @@ function loadConversationState() {
   }
 }
 
+function clearConversationState() {
+  const storage = getBrowserStorage();
+  if (!storage) return;
+
+  try {
+    storage.removeItem(LOCAL_STORAGE_KEY);
+  } catch (error) {
+    console.warn("Could not clear chatbot memory:", error);
+  }
+}
+
 function cleanStoredUserText(text) {
   return text.replace(/^\[Category focus:[^\]]+\]\s*/i, "");
 }
@@ -215,6 +229,29 @@ function restoreChatWindowFromMemory() {
       conversationContext.recentQuestions[0],
     );
   }
+}
+
+function resetUserProfile() {
+  Object.keys(userProfile).forEach((key) => {
+    userProfile[key] = "";
+  });
+}
+
+function clearChatAndReset() {
+  resetUserProfile();
+  conversationContext.recentQuestions = [];
+  activeGoal = "";
+
+  messages.length = 1;
+  messages[0].content = buildSystemPrompt();
+
+  chatWindow.innerHTML = "";
+  currentQuestion.textContent = "";
+  userInput.value = "";
+
+  clearConversationState();
+  renderPresetGoals();
+  displayMessage("assistant", INITIAL_NAME_PROMPT);
 }
 
 /* ============================================================
@@ -815,7 +852,7 @@ async function handleUserMessage(rawText) {
   displayMessage("user", userText);
 
   if (capturedNameThisTurn) {
-    const nameWelcomeReply = `Bonjour ${userProfile.name}, I can help you discover L'Oreal makeup, skincare, haircare, and fragrances, and build a personalized routine.`;
+    const nameWelcomeReply = `Nice to meet you, ${userProfile.name}. What would you like help with today: makeup, skincare, haircare, or fragrance?`;
 
     displayMessage("assistant", nameWelcomeReply);
     messages.push({ role: "user", content: userText });
@@ -927,6 +964,12 @@ if (testApiBtn) {
   });
 }
 
+if (clearChatBtn) {
+  clearChatBtn.addEventListener("click", () => {
+    clearChatAndReset();
+  });
+}
+
 /* ============================================================
    STEP 13 - Welcome message on page load
    ============================================================ */
@@ -938,10 +981,7 @@ if (hasSavedConversation && messages.length > 1) {
 }
 
 if (!userProfile.name) {
-  displayMessage(
-    "assistant",
-    "Bonjour. I can help you discover L'Oreal makeup, skincare, haircare, and fragrances, and build a personalized routine. What is your name?",
-  );
+  displayMessage("assistant", INITIAL_NAME_PROMPT);
 } else if (!hasSavedConversation || messages.length <= 1) {
   displayMessage(
     "assistant",
