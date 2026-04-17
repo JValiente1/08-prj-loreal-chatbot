@@ -427,7 +427,7 @@ function showThinking() {
 
   const bubble = document.createElement("div");
   bubble.classList.add("bubble", "ai", "thinking");
-  bubble.innerHTML = `<span class="msg-label">${buildAssistantLabel()}</span>Because you are worth it.`;
+  bubble.innerHTML = `<span class="msg-label">${buildAssistantLabel()}</span>Because you are worth it...`;
 
   row.appendChild(avatar);
   row.appendChild(bubble);
