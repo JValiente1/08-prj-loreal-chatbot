@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-set -e
-if [[ -n "$BROWSER" ]]; then
-  exec "$BROWSER" "$@"
-fi
-printf '%s\n' "$1"
