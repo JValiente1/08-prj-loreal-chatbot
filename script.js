@@ -9,19 +9,20 @@ const currentQuestion = document.getElementById("currentQuestion");
 const quickPrompts = document.getElementById("quickPrompts");
 const categoryFilters = document.getElementById("categoryFilters");
 const presetGoals = document.getElementById("presetGoals");
+const testApiBtn = document.getElementById("testApiBtn");
+const apiStatus = document.getElementById("apiStatus");
 
 /* ============================================================
-   STEP 2 - Basic app settings
-   You can keep using OpenAI directly, or route through a Worker.
-   - If CHAT_API_URL exists in secrets.js, we use that endpoint.
-   - If not, we default to OpenAI's chat completions endpoint.
-   ============================================================ */
+  STEP 2 - API endpoint settings
+  By default, the app sends requests to the same site's /api/chat path.
+  You can still override this in secrets.js with CHAT_API_URL if needed.
+  ============================================================ */
+const DEFAULT_API_PATH = "/api/chat";
 const API_URL =
-  typeof CHAT_API_URL !== "undefined"
+  typeof CHAT_API_URL !== "undefined" && CHAT_API_URL
     ? CHAT_API_URL
-    : "https://api.openai.com/v1/chat/completions";
-
-const IS_OPENAI_DIRECT = API_URL.includes("api.openai.com");
+    : DEFAULT_API_PATH;
+const IS_SAME_SITE_API = API_URL.startsWith("/");
 const OFF_TOPIC_REPLY =
   "I'm only able to help with L'Oreal beauty topics. Ask me about makeup, skincare, haircare, fragrance, or a personalized routine.";
 
@@ -378,6 +379,75 @@ function showThinking() {
 }
 
 /* ============================================================
+   STEP 9B - API connection test helper
+   Lets users verify API setup before sending chat messages.
+   ============================================================ */
+function setApiStatus(message, statusType) {
+  if (!apiStatus) return;
+
+  apiStatus.textContent = message;
+  apiStatus.classList.remove("success", "error");
+
+  if (statusType === "success") {
+    apiStatus.classList.add("success");
+  }
+
+  if (statusType === "error") {
+    apiStatus.classList.add("error");
+  }
+}
+
+async function testApiConnection() {
+  if (!testApiBtn) return;
+
+  testApiBtn.disabled = true;
+  setApiStatus("Checking API connection...", "");
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "GET",
+    });
+
+    const responseText = await response.text();
+    let data = null;
+
+    if (responseText) {
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        throw new Error(
+          `Expected JSON but got a different response (status ${response.status}).`,
+        );
+      }
+    }
+
+    const endpointWorked =
+      response.status === 405 ||
+      response.ok ||
+      typeof data?.error === "string" ||
+      typeof data?.error?.message === "string";
+
+    if (!endpointWorked) {
+      throw new Error(`Unexpected response status: ${response.status}`);
+    }
+
+    setApiStatus(
+      `API reachable at ${API_URL} (status ${response.status}).`,
+      "success",
+    );
+  } catch (error) {
+    const reason =
+      error && error.message
+        ? error.message
+        : "Unknown error while testing API.";
+
+    setApiStatus(`API check failed: ${reason}`, "error");
+  }
+
+  testApiBtn.disabled = false;
+}
+
+/* ============================================================
    STEP 10 - Quick prompt buttons to guide discovery
    ============================================================ */
 function renderQuickPrompts() {
@@ -549,21 +619,11 @@ async function handleUserMessage(rawText) {
   const thinkingRow = showThinking();
 
   try {
-    if (IS_OPENAI_DIRECT && typeof OPENAI_API_KEY === "undefined") {
-      throw new Error("Missing OPENAI_API_KEY in secrets.js");
-    }
-
-    const headers = {
-      "Content-Type": "application/json",
-    };
-
-    if (IS_OPENAI_DIRECT) {
-      headers.Authorization = `Bearer ${OPENAI_API_KEY}`;
-    }
-
     const response = await fetch(API_URL, {
       method: "POST",
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         model: "gpt-4o",
         messages: messages,
@@ -571,10 +631,24 @@ async function handleUserMessage(rawText) {
       }),
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    let data = null;
+
+    if (responseText) {
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        throw new Error(
+          `API returned a non-JSON response (status ${response.status}).`,
+        );
+      }
+    }
 
     if (!response.ok) {
-      const apiMessage = data.error?.message || "Unknown API error";
+      const apiMessage =
+        data?.error?.message ||
+        data?.error ||
+        `Request failed with status ${response.status}`;
       throw new Error(apiMessage);
     }
 
@@ -591,9 +665,18 @@ async function handleUserMessage(rawText) {
   } catch (error) {
     thinkingRow.remove();
 
+    const reason =
+      error && error.message
+        ? error.message
+        : "Unknown error while contacting the API.";
+
+    const setupHint = IS_SAME_SITE_API
+      ? "This page is using the same-site /api/chat endpoint. If you are testing outside your deployed Cloudflare Pages site, set CHAT_API_URL in secrets.js to your deployed API URL."
+      : `This page is using CHAT_API_URL: ${API_URL}`;
+
     displayMessage(
       "assistant",
-      "I could not connect right now. Please check your API setup in secrets.js (OPENAI_API_KEY or CHAT_API_URL) and try again.",
+      `I could not connect right now.\n\nReason: ${reason}\n\n${setupHint}`,
     );
 
     console.error("Chat request failed:", error);
@@ -611,6 +694,12 @@ chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   await handleUserMessage(userInput.value);
 });
+
+if (testApiBtn) {
+  testApiBtn.addEventListener("click", async () => {
+    await testApiConnection();
+  });
+}
 
 /* ============================================================
    STEP 13 - Welcome message on page load

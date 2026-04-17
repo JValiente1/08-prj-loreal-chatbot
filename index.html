@@ -76,6 +76,18 @@
               <span class="visually-hidden">Send</span>
             </button>
           </form>
+
+          <div class="connection-tools">
+            <button type="button" id="testApiBtn" class="test-api-btn">
+              Test API Connection
+            </button>
+            <p
+              id="apiStatus"
+              class="api-status"
+              role="status"
+              aria-live="polite"
+            ></p>
+          </div>
         </section>
       </main>
 
@@ -91,7 +103,7 @@
       </footer>
     </div>
 
-    <!-- secrets.js can be removed when using Cloudflare Workers for API requests -->
+    <!-- secrets.js is optional and can override the default /api/chat path -->
     <script src="secrets.js"></script>
     <script src="script.js"></script>
   </body>

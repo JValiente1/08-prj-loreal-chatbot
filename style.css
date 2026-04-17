@@ -389,6 +389,54 @@ body {
   outline-offset: 2px;
 }
 
+.connection-tools {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.test-api-btn {
+  border: 1px solid #f0b5d4;
+  background: #fff7fb;
+  color: #5f1739;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.test-api-btn:hover {
+  background: #ffe9f5;
+  border-color: var(--loreal-pink);
+  transform: translateY(-1px);
+}
+
+.test-api-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.api-status {
+  font-size: 0.82rem;
+  color: #4a202f;
+}
+
+.api-status.success {
+  color: #0b6a3e;
+}
+
+.api-status.error {
+  color: #a6192e;
+}
+
 .site-footer {
   text-align: center;
   padding: 20px 0 30px;
