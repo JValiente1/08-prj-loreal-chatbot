@@ -7,6 +7,10 @@ export default {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
+    };
+
+    const jsonHeaders = {
+      ...corsHeaders,
       "Content-Type": "application/json",
     };
 
@@ -14,10 +18,23 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
+    if (request.method === "GET") {
+      return new Response(
+        "L'Oreal Beauty Advisor API is online. This endpoint accepts POST requests only.",
+        {
+          status: 405,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "text/plain; charset=UTF-8",
+          },
+        },
+      );
+    }
+
     if (request.method !== "POST") {
       return new Response(
         JSON.stringify({ error: "Method not allowed. Use POST." }),
-        { status: 405, headers: corsHeaders },
+        { status: 405, headers: jsonHeaders },
       );
     }
 
@@ -25,7 +42,7 @@ export default {
       if (!env.OPENAI_API_KEY) {
         return new Response(
           JSON.stringify({ error: "Missing OPENAI_API_KEY Worker secret." }),
-          { status: 500, headers: corsHeaders },
+          { status: 500, headers: jsonHeaders },
         );
       }
 
@@ -51,7 +68,7 @@ export default {
 
       return new Response(JSON.stringify(data), {
         status: response.status,
-        headers: corsHeaders,
+        headers: jsonHeaders,
       });
     } catch (error) {
       return new Response(
@@ -59,10 +76,8 @@ export default {
           error: "Worker request failed",
           details: error.message,
         }),
-        { status: 500, headers: corsHeaders },
+        { status: 500, headers: jsonHeaders },
       );
     }
   },
 };
-
-

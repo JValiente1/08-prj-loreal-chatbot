@@ -673,6 +673,19 @@ async function testApiConnection() {
       );
     }
 
+    const isPlainTextMethodMessage =
+      response.status === 405 &&
+      (contentType.includes("text/plain") ||
+        /post requests only|use post/i.test(responseText));
+
+    if (isPlainTextMethodMessage) {
+      setApiStatus(
+        `API reachable at ${usedUrl} (status ${response.status}).`,
+        "success",
+      );
+      return;
+    }
+
     let data = null;
 
     if (responseText) {

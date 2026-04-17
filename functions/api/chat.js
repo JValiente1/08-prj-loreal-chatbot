@@ -24,9 +24,17 @@ export function onRequestOptions() {
 }
 
 export function onRequestGet() {
-  return jsonResponse(
-    { error: "Method not allowed. Use POST at /api/chat." },
-    405,
+  return new Response(
+    "L'Oreal Beauty Advisor API is online. This endpoint accepts POST requests only. Send your chat payload to /api/chat using method POST.",
+    {
+      status: 405,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Content-Type": "text/plain; charset=UTF-8",
+      },
+    },
   );
 }
 
