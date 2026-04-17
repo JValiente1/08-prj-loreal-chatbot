@@ -25,72 +25,81 @@ The chatbot can also create personalized routines and recommendations.
 
 ## Add your API configuration
 
-By default, the app sends chat requests to the same domain at `/api/chat`.
+By default, the app sends chat requests to a separate Cloudflare Worker API at:
 
-If you deploy the frontend and API together, you do not need to change anything in `script.js`.
-
-If you want to point the frontend at a different deployed API, create `secrets.js` from `secrets.example.js` and set:
-
-```js
-const CHAT_API_URL = "https://your-api-url.example.com/api/chat";
+```
+https://loreal-chatbot-api.jackie-valiente1.workers.dev
 ```
 
-Do not place your OpenAI API key in `secrets.js` or any browser-side file.
+If you want to point the frontend at a different API endpoint, create `secrets.js` from `secrets.example.js` and set:
 
-## Cloudflare Pages setup (same-domain API)
+```js
+const CHAT_API_URL = "https://your-api-url.example.com";
+```
 
-This project includes a Cloudflare Pages Function for the chat API:
+**Do not place your OpenAI API key in `secrets.js` or any browser-side file.**
 
-- `functions/api/chat.js`
+## Cloudflare Worker API setup
+
+This project includes a Cloudflare Worker handler in `cloudflare-worker.js` for standalone API deployment.
 
 Steps:
 
-1. Create a Cloudflare Pages project connected to this repository.
-2. Deploy the project so your static files and the `functions/` folder are published together.
-3. In Pages project settings, add a secret:
-   - Name: `OPENAI_API_KEY`
-   - Value: your OpenAI API key
-4. Redeploy the project after adding the secret.
-5. Open your deployed site.
-6. The frontend will send requests to `/api/chat` on that same domain.
+1. Log in to Cloudflare:
 
-### Deploy with Wrangler (CLI)
+   ```bash
+   npx wrangler login
+   ```
 
-If you use Wrangler in Codespaces, this minimal flow works for Pages:
+2. Add your OpenAI API key as a Worker secret:
 
-```bash
-npx wrangler login
-npx wrangler pages secret put OPENAI_API_KEY
-npx wrangler pages deploy .
-```
+   ```bash
+   npx wrangler secret put OPENAI_API_KEY --name loreal-chat-api
+   ```
 
-After deploy, Wrangler prints your site URL.
+   Paste your OpenAI API key when prompted.
 
-## Test your same-domain API URL
+3. Deploy the Worker:
 
-Before testing, replace `YOUR_SITE_URL` in the commands below.
+   ```bash
+   npx wrangler deploy cloudflare-worker.js --name loreal-chat-api
+   ```
 
-1. Run the GET request for the API path.
-2. Run the POST request for the API path.
+   Wrangler prints your Worker URL after deployment.
 
-Expected result:
+4. Update `secrets.js` (if it exists) with your Worker URL:
+   ```js
+   const CHAT_API_URL = "https://loreal-chat-api.<your-subdomain>.workers.dev";
+   ```
 
-- GET should return JSON, not your website HTML.
-- POST should return JSON.
-- If your Pages secret is missing, you should still get a JSON error message.
+## Test your Worker API URL
+
+Replace `YOUR_WORKER_URL` with the URL from deployment.
 
 ```bash
-curl -i YOUR_SITE_URL/api/chat
-curl -i -X POST YOUR_SITE_URL/api/chat \
+curl -i -X POST YOUR_WORKER_URL \
    -H "Content-Type: application/json" \
    --data '{"model":"gpt-4o","messages":[{"role":"user","content":"Say hello"}],"max_completion_tokens":20}'
 ```
 
-If the GET request returns your page HTML, or the POST request returns HTML or an empty body, the API route is not deployed correctly yet.
+Expected: HTTP 200 with JSON containing assistant message or OpenAI error.
 
-## Alternative: separate Worker API
+## Alternative: Cloudflare Pages with same-domain API
 
-If you prefer to keep the API on a separate Worker domain, you can still use `cloudflare-worker.js` and point `CHAT_API_URL` at that deployed URL.
+If you prefer to deploy frontend and API together on the same domain, use `functions/api/chat.js`:
+
+```bash
+npx wrangler login
+npx wrangler pages project create 08-prj-loreal-chatbot --production-branch main
+npx wrangler pages secret put OPENAI_API_KEY --project-name 08-prj-loreal-chatbot
+npx wrangler pages deploy . --project-name 08-prj-loreal-chatbot
+```
+
+Then update `secrets.js` to use same-site API:
+
+```js
+const CHAT_API_URL = "/api/chat";
+```
 
 ## Important API format reminder
 

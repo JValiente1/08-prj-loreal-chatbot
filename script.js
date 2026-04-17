@@ -14,17 +14,76 @@ const apiStatus = document.getElementById("apiStatus");
 
 /* ============================================================
   STEP 2 - API endpoint settings
-  By default, the app sends requests to the same site's /api/chat path.
+  By default, the app sends requests to the deployed Worker API URL.
   You can still override this in secrets.js with CHAT_API_URL if needed.
   ============================================================ */
-const DEFAULT_API_PATH = "/api/chat";
-const API_URL =
-  typeof CHAT_API_URL !== "undefined" && CHAT_API_URL
-    ? CHAT_API_URL
-    : DEFAULT_API_PATH;
+const DEFAULT_API_PATH =
+  "https://loreal-chatbot-api.jackie-valiente1.workers.dev";
+
+// Supports config from either `const CHAT_API_URL` or `window.CHAT_API_URL`.
+// If someone provides only a domain (without path), we add /api/chat.
+function normalizeApiUrl(rawUrl) {
+  const trimmedUrl = rawUrl ? rawUrl.trim() : "";
+
+  if (!trimmedUrl) {
+    return DEFAULT_API_PATH;
+  }
+
+  if (trimmedUrl.startsWith("/")) {
+    return trimmedUrl;
+  }
+
+  if (/^https?:\/\/[^/]+$/i.test(trimmedUrl)) {
+    return `${trimmedUrl}/api/chat`;
+  }
+
+  return trimmedUrl;
+}
+
+const configuredApiUrl =
+  (typeof CHAT_API_URL !== "undefined" && CHAT_API_URL) ||
+  (typeof window !== "undefined" && typeof window.CHAT_API_URL === "string"
+    ? window.CHAT_API_URL
+    : "");
+
+const API_URL = normalizeApiUrl(configuredApiUrl);
 const IS_SAME_SITE_API = API_URL.startsWith("/");
 const OFF_TOPIC_REPLY =
   "I'm only able to help with L'Oreal beauty topics. Ask me about makeup, skincare, haircare, fragrance, or a personalized routine.";
+
+// Builds a small list of URL candidates so we can recover from path mismatch.
+function getApiCandidates(primaryUrl) {
+  const candidates = [primaryUrl];
+
+  if (primaryUrl.startsWith("http://") || primaryUrl.startsWith("https://")) {
+    if (primaryUrl.endsWith("/api/chat")) {
+      candidates.push(primaryUrl.replace(/\/api\/chat$/, ""));
+    } else if (/^https?:\/\/[^/]+$/i.test(primaryUrl)) {
+      candidates.push(`${primaryUrl}/api/chat`);
+    }
+  }
+
+  return [...new Set(candidates)];
+}
+
+// Tries the configured URL first, then one fallback URL if we get a 404.
+async function fetchWithApiFallback(requestOptions) {
+  const urlsToTry = getApiCandidates(API_URL);
+  let lastResponse = null;
+
+  for (let index = 0; index < urlsToTry.length; index += 1) {
+    const url = urlsToTry[index];
+    const response = await fetch(url, requestOptions);
+
+    if (response.status !== 404 || index === urlsToTry.length - 1) {
+      return { response, usedUrl: url };
+    }
+
+    lastResponse = response;
+  }
+
+  return { response: lastResponse, usedUrl: API_URL };
+}
 
 /* ============================================================
   STEP 2B - Active category filter
@@ -404,11 +463,25 @@ async function testApiConnection() {
   setApiStatus("Checking API connection...", "");
 
   try {
-    const response = await fetch(API_URL, {
+    const { response, usedUrl } = await fetchWithApiFallback({
       method: "GET",
     });
 
+    if (response.status === 404) {
+      throw new Error(
+        `Endpoint not found at ${usedUrl}. Deploy /api/chat on Cloudflare Pages (functions/api/chat.js) or point CHAT_API_URL to a working API endpoint.`,
+      );
+    }
+
     const responseText = await response.text();
+    const contentType = response.headers.get("content-type") || "";
+
+    if (contentType.includes("text/html")) {
+      throw new Error(
+        `Received HTML from ${usedUrl}. This URL is likely your website, not the chat API endpoint.`,
+      );
+    }
+
     let data = null;
 
     if (responseText) {
@@ -432,7 +505,7 @@ async function testApiConnection() {
     }
 
     setApiStatus(
-      `API reachable at ${API_URL} (status ${response.status}).`,
+      `API reachable at ${usedUrl} (status ${response.status}).`,
       "success",
     );
   } catch (error) {
@@ -619,7 +692,7 @@ async function handleUserMessage(rawText) {
   const thinkingRow = showThinking();
 
   try {
-    const response = await fetch(API_URL, {
+    const { response } = await fetchWithApiFallback({
       method: "POST",
       headers: {
         "Content-Type": "application/json",

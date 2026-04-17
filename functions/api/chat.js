@@ -31,39 +31,16 @@ export function onRequestGet() {
 }
 
 export async function onRequestPost(context) {
-  try {
-    if (!context.env.OPENAI_API_KEY) {
-      return jsonResponse(
-        { error: "Missing OPENAI_API_KEY Pages secret." },
-        500,
-      );
-    }
-
-    const payload = await context.request.json();
-
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${context.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: payload.model || "gpt-4o",
-        messages: payload.messages,
-        max_completion_tokens: payload.max_completion_tokens || 350,
-      }),
-    });
-
-    const data = await response.json();
-
-    return jsonResponse(data, response.status);
-  } catch (error) {
-    return jsonResponse(
-      {
-        error: "API request failed",
-        details: error.message,
-      },
-      500,
-    );
-  }
+  const body = await context.request.json();
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${context.env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  return new Response(response.body, {
+    headers: { "Content-Type": "application/json" },
+  });
 }
