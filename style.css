@@ -60,9 +60,6 @@ body {
 }
 
 .site-header {
-  position: sticky;
-  top: 0;
-  z-index: 30;
   text-align: center;
   padding: 28px 20px 20px;
   background: linear-gradient(
@@ -454,6 +451,8 @@ body {
 }
 
 .api-status {
+  flex-basis: 100%;
+  margin-top: 2px;
   font-size: 0.82rem;
   color: #4a202f;
 }
